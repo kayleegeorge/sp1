@@ -59,14 +59,17 @@ impl EllipticCurveParameters for Secp256r1Parameters {
 
 impl WeierstrassParameters for Secp256r1Parameters {
     const A: GenericArray<u8, U32> = GenericArray::from_array([
-        252, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0, 0, 255, 255, 255, 255,
+        0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF,
     ]);
 
     const B: GenericArray<u8, U32> = GenericArray::from_array([
-        75, 96, 210, 39, 62, 60, 206, 59, 246, 176, 83, 204, 176, 6, 29, 101, 188, 134, 152, 118,
-        85, 189, 235, 179, 231, 147, 58, 170, 216, 53, 198, 90,
+        0x4B, 0x60, 0xD2, 0x27, 0x3E, 0x3C, 0xCE, 0x3B, 0xF6, 0xB0, 0x53, 0xCC, 0xB0, 0x06, 0x1D,
+        0x65, 0xBC, 0x86, 0x98, 0x76, 0x55, 0xBD, 0xEB, 0xB3, 0xE7, 0x93, 0x3A, 0xAA, 0xD8, 0x35,
+        0xC6, 0x5A,
     ]);
+
     fn generator() -> (BigUint, BigUint) {
         let x = BigUint::from_str(
             "48439561293906451759052585252797914202762949526041747995844080717082404635286",
@@ -87,25 +90,25 @@ impl WeierstrassParameters for Secp256r1Parameters {
     }
 
     fn a_int() -> BigUint {
-        // BigUint::zero()
-        BigUint::from_slice(&[
-            0xFC632551, 0xF3B9CAC2, 0xA7179E84, 0xBCE6FAAD, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000,
-            0xFFFFFFFF,
-        ])
+        BigUint::zero()
+        // BigUint::from_slice(&[
+        //     0xFC632551, 0xF3B9CAC2, 0xA7179E84, 0xBCE6FAAD, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000,
+        //     0xFFFFFFFF,
+        // ])
     }
 
     fn b_int() -> BigUint {
-        // BigUint::from(7u32)
-        BigUint::from_slice(&[
-            0x27D2604B, 0x3BCE3C3E, 0xCC53B0F6, 0x651D06B0, 0x769886BC, 0xB3EBBD55, 0xAA3A93E7,
-            0x5AC635D8,
-        ])
+        BigUint::from(7u32)
+        // BigUint::from_slice(&[
+        //     0x27D2604B, 0x3BCE3C3E, 0xCC53B0F6, 0x651D06B0, 0x769886BC, 0xB3EBBD55, 0xAA3A93E7,
+        //     0x5AC635D8,
+        // ])
     }
 }
 
 pub fn secp256r1_decompress<E: EllipticCurve>(bytes_be: &[u8], sign: u32) -> AffinePoint<E> {
     let computed_point =
-        k256::AffinePoint::decompress(bytes_be.into(), Choice::from(sign as u8)).unwrap();
+        p256::AffinePoint::decompress(bytes_be.into(), Choice::from(sign as u8)).unwrap();
     let point = computed_point.to_encoded_point(false);
 
     let x = BigUint::from_bytes_be(point.x().unwrap());
@@ -118,7 +121,8 @@ pub fn secp256r1_sqrt(n: &BigUint) -> BigUint {
     let mut bytes = [0_u8; 32];
     bytes[32 - be_bytes.len()..].copy_from_slice(&be_bytes);
     let fe = FieldElement::from_bytes(&bytes.into()).unwrap();
-    let result_bytes = fe.sqrt().unwrap().normalize().to_bytes();
+    // let result_bytes = fe.sqrt().unwrap().normalize().to_bytes(); // normalize() is not implemented for p256
+    let result_bytes = fe.sqrt().unwrap().to_bytes();
     BigUint::from_be_bytes(&result_bytes as &[u8])
 }
 
