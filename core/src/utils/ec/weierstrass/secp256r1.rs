@@ -3,13 +3,13 @@
 
 use std::str::FromStr;
 
-use elliptic_curve::sec1::ToEncodedPoint;
-use elliptic_curve::subtle::Choice;
+// use elliptic_curve::sec1::ToEncodedPoint;
+// use elliptic_curve::subtle::Choice;
 use generic_array::GenericArray;
 use num::traits::FromBytes;
 use num::traits::ToBytes;
 use num::BigUint;
-use p256::elliptic_curve::point::DecompressPoint;
+// use p256::elliptic_curve::point::DecompressPoint;
 use p256::FieldElement;
 use serde::{Deserialize, Serialize};
 use typenum::{U32, U62};
@@ -17,9 +17,9 @@ use typenum::{U32, U62};
 use super::{SwCurve, WeierstrassParameters};
 use crate::operations::field::params::FieldParameters;
 use crate::operations::field::params::NumLimbs;
-use crate::utils::ec::AffinePoint;
+// use crate::utils::ec::AffinePoint;
 use crate::utils::ec::CurveType;
-use crate::utils::ec::EllipticCurve;
+// use crate::utils::ec::EllipticCurve;
 use crate::utils::ec::EllipticCurveParameters;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -86,12 +86,12 @@ impl WeierstrassParameters for Secp256r1Parameters {
         ])
     }
 
-       fn a_int() -> BigUint {
+    fn a_int() -> BigUint {
         BigUint::from_slice(&[
             0xFFFFFFFC, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000001,
             0xFFFFFFFF,
         ])
-    } 
+    }
 
     fn b_int() -> BigUint {
         BigUint::from_slice(&[
@@ -99,16 +99,6 @@ impl WeierstrassParameters for Secp256r1Parameters {
             0x5AC635D8,
         ])
     }
-}
-
-pub fn secp256r1_decompress<E: EllipticCurve>(bytes_be: &[u8], sign: u32) -> AffinePoint<E> {
-    let computed_point =
-        p256::AffinePoint::decompress(bytes_be.into(), Choice::from(sign as u8)).unwrap();
-    let point = computed_point.to_encoded_point(false);
-
-    let x = BigUint::from_bytes_be(point.x().unwrap().as_slice());
-    let y = BigUint::from_bytes_be(point.y().unwrap().as_slice());
-    AffinePoint::<E>::new(x, y)
 }
 
 pub fn secp256r1_sqrt(n: &BigUint) -> BigUint {

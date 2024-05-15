@@ -35,7 +35,6 @@ use crate::syscall::precompiles::SyscallContext;
 use crate::utils::bytes_to_words_le_vec;
 use crate::utils::ec::weierstrass::bls12_381::bls12381_sqrt;
 use crate::utils::ec::weierstrass::secp256k1::secp256k1_sqrt;
-use crate::utils::ec::weierstrass::secp256r1::secp256r1_sqrt;
 use crate::utils::ec::weierstrass::WeierstrassParameters;
 use crate::utils::ec::CurveType;
 use crate::utils::ec::EllipticCurve;
@@ -78,7 +77,6 @@ impl<E: EllipticCurve> Syscall for WeierstrassDecompressChip<E> {
         match E::CURVE_TYPE {
             CurveType::Secp256k1 => rt.record_mut().k256_decompress_events.push(event),
             CurveType::Bls12381 => rt.record_mut().bls12381_decompress_events.push(event),
-            CurveType::Secp256r1 => rt.record_mut().p256_decompress_events.push(event),
             _ => panic!("Unsupported curve"),
         }
         None
@@ -118,7 +116,6 @@ impl<E: EllipticCurve + WeierstrassParameters> WeierstrassDecompressChip<E> {
         let sqrt_fn = match E::CURVE_TYPE {
             CurveType::Secp256k1 => secp256k1_sqrt,
             CurveType::Bls12381 => bls12381_sqrt,
-            CurveType::Secp256r1 => secp256r1_sqrt,
             _ => panic!("Unsupported curve"),
         };
         let y = cols.y.populate(record, shard, &x_3_plus_b, sqrt_fn);
@@ -141,7 +138,6 @@ where
         match E::CURVE_TYPE {
             CurveType::Secp256k1 => "Secp256k1Decompress".to_string(),
             CurveType::Bls12381 => "Bls12381Decompress".to_string(),
-            CurveType::Secp256r1 => "Secp256r1Decompress".to_string(),
             _ => panic!("Unsupported curve"),
         }
     }
@@ -154,7 +150,6 @@ where
         let events = match E::CURVE_TYPE {
             CurveType::Secp256k1 => &input.k256_decompress_events,
             CurveType::Bls12381 => &input.bls12381_decompress_events,
-            CurveType::Secp256r1 => &input.p256_decompress_events,
             _ => panic!("Unsupported curve"),
         };
 
@@ -216,7 +211,6 @@ where
         match E::CURVE_TYPE {
             CurveType::Secp256k1 => !shard.k256_decompress_events.is_empty(),
             CurveType::Bls12381 => !shard.bls12381_decompress_events.is_empty(),
-            CurveType::Secp256r1 => !shard.p256_decompress_events.is_empty(),
             _ => panic!("Unsupported curve"),
         }
     }
@@ -324,9 +318,6 @@ where
             CurveType::Bls12381 => {
                 AB::F::from_canonical_u32(SyscallCode::BLS12381_DECOMPRESS.syscall_id())
             }
-            CurveType::Secp256r1 => {
-                AB::F::from_canonical_u32(SyscallCode::SECP256R1_DECOMPRESS.syscall_id())
-            }
             _ => panic!("Unsupported curve"),
         };
 
@@ -354,7 +345,6 @@ mod tests {
 
     use crate::utils::run_test_io;
     use crate::utils::tests::SECP256K1_DECOMPRESS_ELF;
-    use crate::utils::tests::SECP256R1_DECOMPRESS_ELF;
 
     #[test]
     fn test_weierstrass_bls_decompress() {
@@ -400,36 +390,6 @@ mod tests {
                 run_test_io(Program::from(SECP256K1_DECOMPRESS_ELF), inputs).unwrap();
             let mut result = [0; 65];
             public_values.read_slice(&mut result);
-            assert_eq!(result, decompressed);
-        }
-    }
-
-    #[test]
-    fn test_weierstrass_r256_decompress() {
-        utils::setup_logger();
-
-        let mut rng = thread_rng();
-
-        let num_tests = 10;
-
-        for _ in 0..num_tests {
-            let secret_key = p256::SecretKey::random(&mut rng);
-            let public_key = secret_key.public_key();
-            let encoded = public_key.to_encoded_point(false);
-            let decompressed = encoded.as_bytes();
-            println!("decompressed: {:?}", decompressed);
-            // let compressed = public_key.to_sec1_bytes();
-            let compressed_enc = public_key.to_encoded_point(true);
-            let compressed = compressed_enc.to_bytes();
-            println!("compressed: {:?}", compressed);
-            let inputs = SP1Stdin::from(&compressed);
-
-            let mut public_values =
-                run_test_io(Program::from(SECP256R1_DECOMPRESS_ELF), inputs).unwrap();
-
-            let mut result = [0; 65];
-            public_values.read_slice(&mut result);
-            // println!("decompressed: {:?}", decompressed.clone());
             assert_eq!(result, decompressed);
         }
     }
